@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FairGuard AI — Login</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<div class="auth-page">
+
+  <!-- LEFT PANEL -->
+  <div class="auth-left-panel">
+    <div class="auth-brand">
+      <div class="auth-brand-icon">🛡️</div>
+      <div class="auth-brand-name">Fair<span>Guard</span> AI</div>
+    </div>
+    <h1 class="auth-left-title">Detect &amp; Fix<br/><em>AI Bias</em><br/>Instantly</h1>
+    <p class="auth-left-sub">Upload any dataset, detect hidden discrimination, and generate fair AI models — with full explainability and audit reports.</p>
+    <div class="auth-feats">
+      <div class="auth-feat"><div class="auth-feat-icon">⚖️</div><span>6+ Fairness Metrics</span></div>
+      <div class="auth-feat"><div class="auth-feat-icon">🧠</div><span>SHAP Explainability</span></div>
+      <div class="auth-feat"><div class="auth-feat-icon">📄</div><span>PDF Audit Reports</span></div>
+      <div class="auth-feat"><div class="auth-feat-icon">🔒</div><span>Free to use</span></div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="auth-right-panel">
+    <div class="auth-form-box">
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login"    onclick="switchTab('login')">Sign In</button>
+        <button class="auth-tab"        id="tab-register" onclick="switchTab('register')">Register</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <div id="form-login">
+        <div class="auth-form-title">Welcome back 👋</div>
+        <div class="auth-form-sub">Sign in to your FairGuard account</div>
+        <div id="login-success" class="auth-success">✅ Login successful! Redirecting...</div>
+        <div id="login-error"   class="auth-error"></div>
+        <div class="auth-field">
+          <label class="auth-label">Email Address</label>
+          <input id="login-email" type="email" class="auth-input" placeholder="you@example.com"/>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Password</label>
+          <input id="login-password" type="password" class="auth-input" placeholder="Enter your password"/>
+        </div>
+        <button class="auth-btn" id="login-btn" onclick="doLogin()">Sign In →</button>
+        <p class="auth-switch">Don't have an account? <a href="#" onclick="switchTab('register');return false;">Create one free</a></p>
+      </div>
+
+      <!-- REGISTER FORM -->
+      <div id="form-register" style="display:none;">
+        <div class="auth-form-title">Create account ✨</div>
+        <div class="auth-form-sub">Join FairGuard AI for free</div>
+        <div id="reg-success" class="auth-success">✅ Account created! Redirecting...</div>
+        <div id="reg-error"   class="auth-error"></div>
+        <div class="auth-field">
+          <label class="auth-label">Full Name</label>
+          <input id="reg-name" type="text" class="auth-input" placeholder="Your full name"/>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Email Address</label>
+          <input id="reg-email" type="email" class="auth-input" placeholder="you@example.com"/>
+        </div>
+        <div class="auth-field">
+          <label class="auth-label">Password</label>
+          <input id="reg-password" type="password" class="auth-input" placeholder="Min 6 characters"/>
+        </div>
+        <button class="auth-btn" id="reg-btn" onclick="doRegister()">Create Account →</button>
+        <p class="auth-switch">Already have an account? <a href="#" onclick="switchTab('login');return false;">Sign in</a></p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // If already logged in → go straight to dashboard
+  window.addEventListener("load", () => {
+    const token = localStorage.getItem("fg_token");
+    if (token) {
+      fetch("/auth/me", { headers: { "Authorization": "Bearer " + token } })
+        .then(r => { if (r.ok) window.location.href = "/dashboard"; })
+        .catch(() => {});
+    }
+    document.getElementById("login-email").focus();
+  });
+
+  function switchTab(tab) {
+    document.getElementById("form-login").style.display    = tab === "login"    ? "block" : "none";
+    document.getElementById("form-register").style.display = tab === "register" ? "block" : "none";
+    document.getElementById("tab-login").classList.toggle("active",    tab === "login");
+    document.getElementById("tab-register").classList.toggle("active", tab === "register");
+    ["login-error","reg-error","login-success","reg-success"].forEach(id => {
+      document.getElementById(id).style.display = "none";
+    });
+    setTimeout(() => {
+      document.getElementById(tab === "login" ? "login-email" : "reg-name").focus();
+    }, 50);
+  }
+
+  function showErr(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.style.display = "block";
+    el.style.animation = "none";
+    el.offsetHeight;
+    el.style.animation = "authShake 0.35s ease";
+  }
+
+  function setBtn(id, loading, label) {
+    const b = document.getElementById(id);
+    b.disabled = loading;
+    b.textContent = loading ? "Please wait..." : label;
+  }
+
+  function getSafeUserKey(data, email) {
+    if (data && data.user_id !== undefined && data.user_id !== null && data.user_id !== "") {
+      return String(data.user_id);
+    }
+    return String(email || "").trim().toLowerCase();
+  }
+
+  async function doLogin() {
+    const email = document.getElementById("login-email").value.trim();
+    const pass  = document.getElementById("login-password").value;
+
+    if (!email || !pass) {
+      showErr("login-error", "Please fill in all fields.");
+      return;
+    }
+
+    setBtn("login-btn", true, "Sign In →");
+
+    try {
+      const res = await fetch("/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: pass }),
+      });
+
+      let data = {};
+      try {
+        data = await res.json();
+      } catch (_) {
+        data = {};
+      }
+
+      if (!res.ok) {
+        showErr("login-error", data.detail || "Login failed.");
+        return;
+      }
+
+      const userKey = getSafeUserKey(data, email);
+
+      localStorage.setItem("fg_token", data.token);
+      localStorage.setItem("fg_user_id", userKey);
+      localStorage.setItem("fg_user", JSON.stringify({
+        id: data.user_id ?? null,
+        name: data.name,
+        email: data.email || email
+      }));
+
+      document.getElementById("login-success").style.display = "block";
+      setTimeout(() => window.location.href = "/dashboard", 700);
+
+    } catch (e) {
+      showErr("login-error", "Cannot reach server. Is the backend running?");
+    } finally {
+      setBtn("login-btn", false, "Sign In →");
+    }
+  }
+
+  async function doRegister() {
+    const name  = document.getElementById("reg-name").value.trim();
+    const email = document.getElementById("reg-email").value.trim();
+    const pass  = document.getElementById("reg-password").value;
+
+    if (!name || !email || !pass) {
+      showErr("reg-error", "Please fill in all fields.");
+      return;
+    }
+
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      showErr("reg-error", "Please enter a valid email.");
+      return;
+    }
+
+    if (pass.length < 6) {
+      showErr("reg-error", "Password must be at least 6 characters.");
+      return;
+    }
+
+    if (pass.length > 128) {
+      showErr("reg-error", "Password must be at most 128 characters.");
+      return;
+    }
+
+    setBtn("reg-btn", true, "Create Account →");
+
+    try {
+      const res = await fetch("/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password: pass }),
+      });
+
+      let data = {};
+      try {
+        data = await res.json();
+      } catch (_) {
+        data = {};
+      }
+
+      if (!res.ok) {
+        showErr("reg-error", data.detail || "Registration failed.");
+        return;
+      }
+
+      const userKey = getSafeUserKey(data, email);
+
+      localStorage.setItem("fg_token", data.token);
+      localStorage.setItem("fg_user_id", userKey);
+      localStorage.setItem("fg_user", JSON.stringify({
+        id: data.user_id ?? null,
+        name: data.name || name,
+        email: data.email || email
+      }));
+
+      document.getElementById("reg-success").style.display = "block";
+      setTimeout(() => window.location.href = "/dashboard", 700);
+
+    } catch (e) {
+      showErr("reg-error", "Cannot reach server. Is the backend running?");
+    } finally {
+      setBtn("reg-btn", false, "Create Account →");
+    }
+  }
+
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Enter") return;
+    const loginVisible = document.getElementById("form-login").style.display !== "none";
+    if (loginVisible) doLogin();
+    else doRegister();
+  });
+</script>
+</body>
+</html>

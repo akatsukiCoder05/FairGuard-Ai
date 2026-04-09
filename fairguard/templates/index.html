@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FairGuard AI — Bias Detection Platform</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <div class="logo">
+      <div class="logo-icon">🛡️</div>
+      <div>
+        <div class="logo-text">Fair<span>Guard</span> AI</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="nav-user-chip">
+        <div class="nav-avatar" id="nav-avatar">U</div>
+        <span id="nav-username" style="font-size:13px;font-weight:700;">User</span>
+      </div>
+      <button class="btn btn-outline" onclick="FairGuardTour.start(true)">❓ Tour</button>
+      <button class="btn btn-outline" style="padding:6px 14px;font-size:12px;" onclick="toggleHistory()">📂
+        History</button>
+      <!-- <div class="navbar-badge">Enterprise Bias Detection v2.0</div> -->
+      <button class="btn btn-outline" style="padding:6px 14px;font-size:12px;" onclick="toggleTheme()">🌙 Toggle
+        Theme</button>
+      <button class="btn btn-outline" style="padding:6px 14px;font-size:12px;" onclick="toggleAbout()">ℹ️
+        About</button>
+      <button class="btn btn-outline" style="padding:6px 14px;font-size:12px;color:#ef4444;border-color:#fca5a5;"
+        onclick="logout()">Logout</button>
+    </div>
+  </nav>
+  <!-- HERO -->
+  <div class="hero">
+    <h1>Detect &amp; Fix <em>AI Bias</em><br />Before It Harms People</h1>
+    <p>Upload any dataset, detect hidden discrimination, and generate fair AI models in minutes — with full
+      explainability and audit reports.</p>
+    <div class="hero-stats">
+      <div class="stat">
+        <div class="stat-num">6+</div>
+        <div class="stat-label">Fairness Metrics</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">3</div>
+        <div class="stat-label">Mitigation Methods</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">SHAP</div>
+        <div class="stat-label">Explainability</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">PDF</div>
+        <div class="stat-label">Audit Reports</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP INDICATORS -->
+  <div class="steps">
+    <div class="step active" id="step1-indicator">📁 Upload</div>
+    <div class="step-arrow">→</div>
+    <div class="step" id="step2-indicator">⚙️ Configure</div>
+    <div class="step-arrow">→</div>
+    <div class="step" id="step3-indicator">🧠 Analyze</div>
+    <div class="step-arrow">→</div>
+    <div class="step" id="step4-indicator">📊 Results</div>
+  </div>
+
+  <div class="main">
+    <div id="alert-container"></div>
+
+    <!-- HISTORY PANEL -->
+    <div id="history-panel" data-intro="Yahan tumhari previous analysis history save hoti hai" data-step="6"
+      class="card" style="display:none;margin-bottom:20px;">
+      <div class="card-header">
+        <div class="card-icon" style="background:#eef0fe;">📂</div>
+        <div style="flex:1;">
+          <div class="card-title">Analysis History</div>
+          <div class="card-subtitle">Previous datasets you have analyzed</div>
+        </div>
+        <button class="btn btn-outline" style="padding:5px 12px;font-size:12px;" onclick="clearHistory()">🗑️ Clear
+          All</button>
+      </div>
+      <div id="history-list">
+        <div class="empty-state-text">No history yet. Run an analysis to save it here.</div>
+      </div>
+    </div>
+
+
+
+    <!-- STEP 1: UPLOAD -->
+    <div id="section-upload" class="result-section active">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:#eef0fe;">📁</div>
+          <div>
+            <div class="card-title">Upload Your Dataset</div>
+            <div class="card-subtitle">Supports CSV, Excel (.xlsx), and JSON files</div>
+          </div>
+        </div>
+        <div class="upload-zone" id="uploadZone"
+          data-intro="Yahan se apna dataset upload karo (CSV, Excel, JSON ya PDF)" data-step="1"
+          onclick="document.getElementById('fileInput').click()">
+          <input type="file" id="fileInput" accept=".csv,.xlsx,.xls,.json,.pdf" onchange="handleFileUpload(event)" />
+          <div class="upload-icon">📂</div>
+          <h3>Drop your dataset here</h3>
+          <p>or click to browse &bull; CSV, Excel, JSON, PDF supported</p>
+          <p style="margin-top:12px;font-size:12px;color:var(--muted)">Try: Adult Income, German Credit, COMPAS datasets
+            from Kaggle</p>
+        </div>
+        <div id="upload-status" style="margin-top:16px;display:none"></div>
+      </div>
+
+      <!-- Dataset Preview -->
+      <div class="card" id="dataset-preview-card" style="display:none">
+        <div class="card-header">
+          <div class="card-icon" style="background:#e8f8f4;">🔎</div>
+          <div>
+            <div class="card-title">Dataset Overview</div>
+            <div class="card-subtitle" id="dataset-meta"></div>
+          </div>
+        </div>
+        <div class="metrics-grid" id="dataset-stats-grid"></div>
+        <div style="margin-top:20px;">
+          <div class="form-label">Detected Sensitive Columns</div>
+          <div id="sensitive-hints" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;"></div>
+        </div>
+
+        <!-- ── NEW: Sample Preview ── -->
+        <div style="margin-top:20px;" id="sample-preview-wrap" style="display:none;">
+          <div class="form-label">📋 Dataset Sample (First 8 Rows)</div>
+          <div id="sample-table-container"
+            style="overflow-x:auto;margin-top:8px;border-radius:10px;border:1px solid var(--border);max-height:260px;overflow-y:auto;">
+          </div>
+        </div>
+
+        <div style="margin-top:20px;text-align:right;">
+          <button class="btn btn-primary" onclick="goToConfig()">Continue to Configuration →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: CONFIGURE -->
+    <div id="section-config" class="result-section">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:#fde8e8;">⚙️</div>
+          <div>
+            <div class="card-title">Configure Analysis</div>
+            <div class="card-subtitle">Select your target column — FairGuard will auto-scan every column for bias</div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">🎯 Target Column (What AI Predicts)</label>
+          <div class="select-wrapper">
+            <select id="target-col" data-intro="Yahan target column select karo (jaise hired ya approved)" data-step="2"
+              onchange="validateConfig()"></select>
+          </div>
+          <div class="form-hint" id="target-hint">Must contain only binary values: 0 and 1 (e.g. hired, approved,
+            selected)</div>
+        </div>
+
+        <div class="alert alert-info" style="margin-bottom:20px;">
+          🔍 <strong>Auto-Bias Scan:</strong> FairGuard will automatically test <strong>every column</strong> in your
+          dataset and rank them by how much bias they cause. No manual column selection needed.
+        </div>
+
+        <div class="form-group">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <label class="form-label" style="margin-bottom:0;">📋 Columns to Scan</label>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-outline" style="padding:5px 12px;font-size:12px;"
+                onclick="toggleAllCols(true)">Select All</button>
+              <button class="btn btn-outline" style="padding:5px 12px;font-size:12px;"
+                onclick="toggleAllCols(false)">Deselect All</button>
+            </div>
+          </div>
+          <div class="form-hint" style="margin-bottom:12px;">All non-target columns are selected by default. Uncheck any
+            you want to skip.</div>
+          <div id="scan-columns-grid"
+            data-intro="Yahan columns select hote hain jisme bias check hoga (gender, caste, etc)" data-step="3"
+            style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;max-height:220px;overflow-y:auto;padding:4px;">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">🔧 Bias Mitigation Method</label>
+          <div class="select-wrapper">
+            <select id="mitigation-method">
+              <option value="reweighting" selected>Reweighting — Pre-processing (Recommended)</option>
+              <option value="reductions">Reductions — In-processing (Fairlearn)</option>
+              <option value="postprocessing">Post-processing (Threshold Optimizer)</option>
+            </select>
+          </div>
+          <div class="form-hint">Reweighting is set as default — best balance of accuracy and fairness</div>
+        </div>
+
+        <div id="same-col-warning" class="alert alert-error" style="display:none;">
+          ⚠️ <strong>Target column cannot be the same as a scan column.</strong> It will be excluded automatically.
+        </div>
+
+        <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:8px;">
+          <button class="btn btn-outline" onclick="goToSection('upload')">← Back</button>
+          <button class="btn btn-primary" onclick="runAutoScan()"
+            data-intro="Click karo aur system automatically bias detect karega" data-step="4" id="run-btn">
+            🔍 Auto-Scan All Columns for Bias
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2B: SCAN RESULTS -->
+    <div id="section-scanresults" class="result-section">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:#fde8e8;">🔍</div>
+          <div>
+            <div class="card-title">Bias Scan Results</div>
+            <div class="card-subtitle" id="scan-subtitle">Scanning all columns...</div>
+          </div>
+        </div>
+        <div id="scan-progress-area" style="margin-bottom:20px;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;">
+            <span id="scan-progress-label" style="color:var(--muted);">Starting scan...</span>
+            <span id="scan-progress-count" style="color:var(--accent);font-weight:700;"></span>
+          </div>
+          <div style="height:8px;background:var(--border);border-radius:10px;overflow:hidden;">
+            <div id="scan-progress-bar"
+              style="height:100%;background:linear-gradient(90deg,var(--accent),var(--accent3));border-radius:10px;transition:width 0.4s ease;width:0%;">
+            </div>
+          </div>
+          <div id="scan-current-col" style="margin-top:8px;font-size:12px;color:var(--muted);"></div>
+        </div>
+        <div id="scan-results-table-wrap" style="display:none;">
+          <table class="comparison-table" style="margin-bottom:20px;">
+            <thead>
+              <tr>
+                <th>Rank</th>
+                <th>Column</th>
+                <th>Bias Level</th>
+                <th>DPD (Gap)</th>
+                <th>DPR (Ratio)</th>
+                <th>Verdict</th>
+              </tr>
+            </thead>
+            <tbody id="scan-results-body"></tbody>
+          </table>
+          <div class="alert alert-info" id="scan-summary-msg" style="margin-bottom:20px;"></div>
+          <div style="display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap;">
+            <button class="btn btn-outline" onclick="goToSection('config')">← Change Target Column</button>
+            <button class="btn btn-primary" onclick="runFullPipelineOnWorst()" id="full-analysis-btn">
+              🚀 Run Full Analysis on Most Biased Column
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: PIPELINE -->
+    <div id="section-pipeline" class="result-section">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:#eef0fe;">🔄</div>
+          <div>
+            <div class="card-title">Running FairGuard Analysis Pipeline</div>
+            <div class="card-subtitle">Please wait while we analyze your dataset...</div>
+          </div>
+        </div>
+        <div class="pipeline-track" id="pipeline-track">
+          <div class="pipeline-step" id="ps-preprocess">
+            <div class="step-status">⏳</div>
+            <div class="step-info">
+              <h4>Data Preprocessing</h4>
+              <p>Encoding, scaling, train-test split</p>
+            </div>
+          </div>
+          <div class="pipeline-step" id="ps-train">
+            <div class="step-status">⏳</div>
+            <div class="step-info">
+              <h4>Training Original Model</h4>
+              <p>Random Forest Classifier (150 trees)</p>
+            </div>
+          </div>
+          <div class="pipeline-step" id="ps-bias">
+            <div class="step-status">⏳</div>
+            <div class="step-info">
+              <h4>Detecting Bias</h4>
+              <p>Computing 6 fairness metrics across groups</p>
+            </div>
+          </div>
+          <div class="pipeline-step" id="ps-mitigate">
+            <div class="step-status">⏳</div>
+            <div class="step-info">
+              <h4>Mitigating Bias</h4>
+              <p>Applying selected fairness constraint</p>
+            </div>
+          </div>
+          <div class="pipeline-step" id="ps-shap">
+            <div class="step-status">⏳</div>
+            <div class="step-info">
+              <h4>SHAP Explainability</h4>
+              <p>Computing feature importance scores</p>
+            </div>
+          </div>
+          <div class="pipeline-step" id="ps-compare">
+            <div class="step-status">⏳</div>
+            <div class="step-info">
+              <h4>Generating Comparison Report</h4>
+              <p>Before vs After analysis</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 4: RESULTS -->
+    <div id="section-results" data-intro="Yahan final results, charts aur fairness metrics dikhenge" data-step="5"
+      class="result-section">
+
+      <!-- Top bar: severity + PDF button -->
+      <div class="card" id="bias-score-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+          <div>
+            <div
+              style="font-size:12px;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px;">
+              Bias Severity Detected</div>
+            <div id="severity-badge-container"></div>
+            <div style="margin-top:12px;" id="bias-detected-msg"></div>
+          </div>
+          <button class="btn btn-success" onclick="downloadDetailedPDF()" id="report-btn">
+            📄 Download Detailed PDF Report
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick verdict strip -->
+      <div id="quick-verdict" class="quick-verdict"></div>
+
+      <!-- Two-column layout: left=results, right=AI sidebar -->
+      <div class="results-layout">
+
+        <!-- LEFT: all metric cards -->
+        <div class="results-left">
+
+          <!-- Model Performance -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon" style="background:#eef0fe;">🤖</div>
+              <div>
+                <div class="card-title">Original Model Performance</div>
+                <div class="card-subtitle">Before bias mitigation</div>
+              </div>
+            </div>
+            <div class="metrics-grid" id="model-metrics-grid"></div>
+          </div>
+
+          <!-- Fairness Metrics -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon" style="background:#fde8e8;">⚖️</div>
+              <div>
+                <div class="card-title">Fairness Metrics Analysis</div>
+                <div class="card-subtitle">Key metrics across demographic groups</div>
+              </div>
+            </div>
+            <table class="comparison-table">
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  <th>Value</th>
+                  <th>Ideal</th>
+                  <th>Threshold</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="fairness-metrics-body"></tbody>
+            </table>
+            <div style="margin-top:20px;">
+              <div class="form-label" style="margin-bottom:10px;">🔍 Interpretation</div>
+              <ul class="interpretation-list" id="interpretation-list"></ul>
+            </div>
+          </div>
+
+          <!-- Group Selection Rates -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon" style="background:#fff8e8;">👥</div>
+              <div>
+                <div class="card-title">Group-wise Selection Rates</div>
+                <div class="card-subtitle">How often each group receives a positive outcome</div>
+              </div>
+            </div>
+            <div id="selection-rates-bars"></div>
+          </div>
+
+          <!-- SHAP -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon" style="background:#e8f8f4;">🧠</div>
+              <div>
+                <div class="card-title">SHAP Feature Importance</div>
+                <div class="card-subtitle">Which features drive AI decisions the most</div>
+              </div>
+            </div>
+            <div id="shap-bars"></div>
+            <div class="alert alert-info" style="margin-top:16px;">
+              💡 Higher SHAP value = that feature has more influence on the model's decision. If a sensitive feature
+              (like Gender or Race) ranks high, it signals potential bias.
+            </div>
+          </div>
+
+          <!-- Fair Model Results -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon" style="background:#e8f8f4;">✅</div>
+              <div>
+                <div class="card-title">Fair Model Results</div>
+                <div class="card-subtitle">After bias mitigation</div>
+              </div>
+            </div>
+            <div class="metrics-grid" id="fair-metrics-grid"></div>
+          </div>
+
+          <!-- Feature Importance Chart -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon">📈</div>
+              <div>
+                <div class="card-title">Top Feature Importances</div>
+                <div class="card-subtitle">Original model — Random Forest</div>
+              </div>
+            </div>
+            <canvas id="featureChart" height="160"></canvas>
+          </div>
+
+          <!-- ── NEW: Fairness Metrics Comparison Chart ── -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon" style="background:#eef0fe;">📊</div>
+              <div>
+                <div class="card-title">Fairness Metrics — Before vs After</div>
+                <div class="card-subtitle">DPD, DPR, EOD comparison after bias mitigation</div>
+              </div>
+            </div>
+            <canvas id="comparisonChart" height="140"></canvas>
+          </div>
+
+          <!-- ── NEW: Group Accuracy Chart ── -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-icon" style="background:#fff8e8;">👥</div>
+              <div>
+                <div class="card-title">Group Accuracy — Before vs After</div>
+                <div class="card-subtitle">Per-group accuracy change after correction</div>
+              </div>
+            </div>
+            <canvas id="groupAccChart" height="140"></canvas>
+          </div>
+
+          <!-- ── NEW: Correlation Heatmap ── -->
+          <div class="card" id="correlation-heatmap-card" style="display:none;">
+            <div class="card-header">
+              <div class="card-icon" style="background:#fde8e8;">🌡️</div>
+              <div>
+                <div class="card-title">Column Correlation Heatmap</div>
+                <div class="card-subtitle">How strongly columns are related to each other</div>
+              </div>
+            </div>
+            <div id="heatmap-container"></div>
+            <div class="alert alert-info" style="margin-top:14px;">
+              💡 Values close to <strong>+1</strong> = strong positive link. Close to <strong>-1</strong> = opposite
+              relationship. Near <strong>0</strong> = no link. Columns strongly linked to the target may cause bias.
+            </div>
+          </div>
+
+          <!-- Download Corrected Dataset -->
+          <div class="card" id="fixed-dataset-card" style="display:none;">
+            <div class="card-header">
+              <div class="card-icon" style="background:#e8f8f4;">📥</div>
+              <div>
+                <div class="card-title">Download Corrected Dataset</div>
+                <div class="card-subtitle" id="fixed-dataset-subtitle">Target column will be recalculated based on merit
+                  — all columns kept intact</div>
+              </div>
+            </div>
+            <div id="fixed-dataset-removed-cols" style="margin-bottom:16px;"></div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;">
+              <button class="btn btn-success" onclick="downloadFixedDataset()"
+                data-intro="Yahan se bias-free corrected dataset download kar sakte ho" data-step="7"
+                id="fixed-dataset-btn">⚙️ Download
+                Corrected Dataset (CSV)</button>
+              <button class="btn btn-primary" onclick="downloadDetailedPDF()">📄 Download PDF Report</button>
+            </div>
+            <div id="fixed-dataset-status" style="margin-top:12px;"></div>
+          </div>
+
+          <div style="text-align:center;margin-top:16px;">
+            <button class="btn btn-outline" onclick="resetAll()">🔄 Analyze Another Dataset</button>
+          </div>
+        </div><!-- end results-left -->
+
+        <!-- RIGHT: AI Explanation Sidebar (sticky) -->
+        <div class="results-right">
+          <div class="ai-sidebar" id="ai-sidebar">
+            <div class="ai-sidebar-header">
+              <div class="ai-sidebar-head-row">
+                <div class="ai-sidebar-bot-icon">🤖</div>
+                <div>
+                  <div class="ai-sidebar-main-title">AI Explanation</div>
+                  <div class="ai-sidebar-main-subtitle">Full dataset analysis</div>
+                </div>
+              </div>
+            </div>
+            <div id="ai-explanation-content" class="ai-sidebar-body">
+              <div class="ai-loading-state">
+                <div class="spinner ai-loading-spinner"></div>
+                <div class="ai-loading-text">Generating AI explanation...</div>
+              </div>
+            </div>
+          </div>
+        </div><!-- end results-right -->
+
+      </div><!-- end results-layout -->
+    </div>
+  </div>
+
+  <!-- ABOUT PANEL (slide-in, closes in-place like history) -->
+  <div id="about-panel" style="display:none;">
+    <div id="about-panel-content"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="/static/app.js"></script>
+  <script src="/static/tour.js"></script>
+</body>
+
+</html>

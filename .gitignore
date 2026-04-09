@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+env/
+
+# Uploads & reports (your project specific)
+fairguard/uploads/
+fairguard/reports/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
