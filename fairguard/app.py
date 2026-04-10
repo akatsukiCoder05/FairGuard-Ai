@@ -11,9 +11,8 @@ from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from passlib.context import CryptContext
 from jose import JWTError, jwt
 from pydantic import BaseModel
-
-from bias_detector import FairGuardEngine
-from report_generator import generate_pdf_report
+from .bias_detector import FairGuardEngine
+from .report_generator import generate_pdf_report
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEMPLATES_DIR = os.path.join(BASE_DIR, "templates")
