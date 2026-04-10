@@ -1818,3 +1818,86 @@ body.dark-theme .heatmap-col-label {
   color: #e2e8f0 !important;
   border-color: #334155 !important;
 }
+
+/* ===== MOBILE RESPONSIVE FIXES ===== */
+
+@media (max-width: 768px) {
+
+  /* Navbar fix */
+  nav, .navbar, header {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding: 8px !important;
+  }
+
+  nav button, .navbar button, header button {
+    font-size: 12px !important;
+    padding: 5px 8px !important;
+  }
+
+  /* Main container */
+  .container, main, .main-content {
+    padding: 10px !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Cards fix */
+  .card, .result-card, .scan-card {
+    padding: 12px !important;
+    margin: 8px 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Heatmap/Table scroll fix */
+  table, .heatmap, .correlation-table {
+    display: block !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    width: 100% !important;
+  }
+
+  /* Stats section (6+ metrics, 3 methods) */
+  .stats-grid, .features-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* Upload box */
+  .upload-box, .dropzone {
+    padding: 20px 10px !important;
+    width: 100% !important;
+  }
+
+  /* Headings */
+  h1 { font-size: 22px !important; }
+  h2 { font-size: 18px !important; }
+  h3 { font-size: 16px !important; }
+
+  /* Buttons */
+  button, .btn {
+    width: 100% !important;
+    margin: 4px 0 !important;
+    font-size: 14px !important;
+  }
+
+  /* Info tooltip cards */
+  .info-box, .tip-box {
+    font-size: 13px !important;
+    overflow: hidden !important;
+    word-wrap: break-word !important;
+  }
+
+  /* Bias result tags */
+  .badge, .tag, .chip {
+    font-size: 11px !important;
+    padding: 3px 8px !important;
+  }
+}
+
+/* Extra small phones */
+@media (max-width: 380px) {
+  h1 { font-size: 18px !important; }
+  nav button { font-size: 10px !important; }
+}
