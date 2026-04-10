@@ -1300,3 +1300,84 @@ body.dark-theme .heatmap-col-label { background: #1e293b !important; color: #e2e
     padding: 10px 10px !important;
   }
 }
+/* ── MOBILE TABLE OVERFLOW FIXES ── */
+@media (max-width: 768px) {
+
+  /* Wrap ALL tables in a scroll container */
+  .comparison-table,
+  #fairness-table,
+  #bias-scan-table,
+  table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+    white-space: nowrap !important;
+  }
+
+  /* Keep thead/tbody/tr as their correct roles */
+  .comparison-table thead,
+  .comparison-table tbody,
+  .comparison-table tr,
+  table thead,
+  table tbody,
+  table tr {
+    display: table-row-group !important;
+  }
+  .comparison-table thead,
+  table thead {
+    display: table-header-group !important;
+  }
+  .comparison-table tr,
+  table tr {
+    display: table-row !important;
+  }
+  .comparison-table th,
+  .comparison-table td,
+  table th,
+  table td {
+    display: table-cell !important;
+    white-space: normal !important;
+    min-width: 70px !important;
+  }
+
+  /* METRIC column (first col) gets more room */
+  .comparison-table td:first-child,
+  .comparison-table th:first-child {
+    min-width: 130px !important;
+    max-width: 160px !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+
+  /* VALUE / IDEAL / THRESHOLD columns: compact */
+  .comparison-table td:nth-child(2),
+  .comparison-table td:nth-child(3),
+  .comparison-table td:nth-child(4),
+  .comparison-table th:nth-child(2),
+  .comparison-table th:nth-child(3),
+  .comparison-table th:nth-child(4) {
+    min-width: 60px !important;
+    text-align: center !important;
+  }
+
+  /* STATUS / VERDICT column: fixed width, badge fits */
+  .comparison-table td:last-child,
+  .comparison-table th:last-child {
+    min-width: 80px !important;
+    text-align: center !important;
+  }
+
+  /* Wrap the card containing the table so it scrolls not breaks layout */
+  .card {
+    overflow: hidden !important;
+  }
+
+  /* Bias scan table (if it's a separate element) */
+  #bias-scan-results table,
+  .bias-scan-table {
+    display: block !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+}
